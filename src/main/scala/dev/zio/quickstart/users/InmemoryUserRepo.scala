@@ -3,22 +3,22 @@ import zio.*
 
 import scala.collection.mutable
 
-  case class InmemoryUserRepo(map: Ref[mutable.Map[String, User]]) extends UserRepo:
+  case class InmemoryUserRepo(map: Ref[mutable.Map[String, StoredUser]]) extends UserRepo:
     def register(user: User): UIO[String] =
       for
         id <- Random.nextUUID.map(_.toString)
-        _ <- map.updateAndGet(_ addOne(id, user))
+        _ <- map.updateAndGet(_ addOne(id, StoredUser(id, user.name, user.age)))
       yield id
 
-    def lookup(id: String): UIO[Option[User]] =
+    def lookup(id: String): UIO[Option[StoredUser]] =
       map.get.map(_.get(id))
      
-    def users: UIO[List[User]] =
+    def users: UIO[List[StoredUser]] =
        map.get.map(_.values.toList) 
 
   object InmemoryUserRepo {
     def layer: ZLayer[Any, Nothing, InmemoryUserRepo] =
       ZLayer.fromZIO(
-        Ref.make(mutable.Map.empty[String, User]).map(new InmemoryUserRepo(_))
+        Ref.make(mutable.Map.empty[String, StoredUser]).map(new InmemoryUserRepo(_))
       )
   }

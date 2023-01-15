@@ -8,6 +8,7 @@ import zio.*
 
 import java.util.UUID
 import javax.sql.DataSource
+import io.getquill.autoQuote
 
 case class UserTable(uuid: UUID, name: String, age: Int)
 
@@ -29,19 +30,19 @@ case class PersistentUserRepo(ds: DataSource) extends UserRepo:
     yield id.toString
   }.provide(ZLayer.succeed(ds))
 
-  override def lookup(id: String): Task[Option[User]] =
+  override def lookup(id: String): Task[Option[StoredUser]] =
     ctx.run {
       quote {
         query[UserTable]
           .filter(p => p.uuid == lift(UUID.fromString(id)))
-          .map(u => User(u.name, u.age))
+          .map(x => StoredUser("aaa", x.name, x.age))
       }
     }.provide(ZLayer.succeed(ds)).map(_.headOption)
 
-  override def users: Task[List[User]] =
+  override def users: Task[List[StoredUser]] =
     ctx.run {
       quote {
-        query[UserTable].map(u => User(u.name, u.age))
+        query[UserTable].map(u => StoredUser("bbbb", u.name, u.age))
       }
     }.provide(ZLayer.succeed(ds))
 
